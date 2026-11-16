@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>商业分析数据后台</title>
+<style>
+  :root {
+    --brand: #EE4D2D;
+    --brand-dark: #D73211;
+    --bg: #f5f5f5;
+    --card: #fff;
+    --line: #e5e5e5;
+    --text: #333;
+    --muted: #999;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .top {
+    height: 56px;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .logo {
+    width: 28px; height: 28px; border-radius: 6px; background: var(--brand);
+    color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 700;
+  }
+  .top-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    height: 32px; padding: 0 14px; border-radius: 4px; border: 1px solid var(--line);
+    background: #fff; cursor: pointer; font-size: 13px;
+  }
+  .btn:hover { border-color: #ccc; }
+  .btn-primary {
+    background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600;
+  }
+  .btn-primary:hover { background: var(--brand-dark); }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px 16px 48px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab {
+    height: 34px; padding: 0 14px; border: 1px solid transparent; border-radius: 4px;
+    background: transparent; cursor: pointer; color: #666; font-size: 13px;
+  }
+  .tab.active { background: #fff; border-color: var(--line); color: var(--brand); font-weight: 600; }
+  .panel {
+    display: none; background: var(--card); border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06); padding: 16px;
+  }
+  .panel.active { display: block; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin-bottom: 14px; }
+  label.field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #666; }
+  input[type=number], input[type=text], select {
+    height: 34px; min-width: 120px; padding: 0 10px; border: 1px solid var(--line);
+    border-radius: 4px; font-size: 13px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border-bottom: 1px solid #f0f0f0; padding: 8px 6px; text-align: left; }
+  th { color: #888; font-weight: 500; background: #fafafa; position: sticky; top: 0; }
+  td input { width: 100%; min-width: 72px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
+  .status {
+    font-size: 13px; color: #666; min-height: 20px;
+  }
+  .status.ok { color: #30B566; }
+  .status.err { color: var(--brand); }
+  .table-wrap { overflow: auto; max-height: 62vh; border: 1px solid var(--line); border-radius: 4px; }
+  .subhead { font-size: 14px; font-weight: 600; margin: 8px 0 10px; }
+  a.link { color: var(--brand); text-decoration: none; font-size: 13px; }
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="logo">S</span>商业分析数据后台</div>
+    <div class="top-actions">
+      <a class="link" href="/datacenter/home/?cnsc_shop_id=864505556" target="_blank">打开商业分析</a>
+      <button class="btn" id="btnReset" type="button">恢复默认</button>
+      <button class="btn btn-primary" id="btnSave" type="button">保存</button>
+    </div>
+  </header>
+  <main class="wrap">
+    <div class="status" id="status">加载中…</div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="preset">今日 / 昨天</button>
+      <button class="tab" data-tab="month">按月汇总</button>
+      <button class="tab" data-tab="series">按日序列</button>
+      <button class="tab" data-tab="shops">店铺权重</button>
+    </div>
+
+    <section class="panel active" id="panel-preset">
+      <p class="hint">改汇总数字即可；小时折线会按总数自动重算。</p>
+      <div class="subhead">今日实时</div>
+      <div class="table-wrap" id="todayTable"></div>
+      <div class="subhead" style="margin-top:18px">昨天</div>
+      <div class="table-wrap" id="ydayTable"></div>
+    </section>
+
+    <section class="panel" id="panel-month">
+      <p class="hint">环比按「上月同期」：未结束的月份只对比上月相同天数（用按日序列前 N 天）；已结束月份对比整月。改指标会自动重算，也可手改 mom；保存不会再覆盖你手改的环比。</p>
+      <div class="row" style="margin-bottom:10px">
+        <button class="btn" type="button" id="btnRecomputeMom">按上月同期重算全部环比</button>
+      </div>
+      <div class="table-wrap" id="monthTable"></div>
+    </section>
+
+    <section class="panel" id="panel-series">
+      <div class="row">
+        <label class="field">月份
+          <select id="seriesMonth"></select>
+        </label>
+      </div>
+      <p class="hint">按日数组，一天一个数；保存后折线图用这里的序列。</p>
+      <div class="table-wrap" id="seriesTable"></div>
+    </section>
+
+    <section class="panel" id="panel-shops">
+      <div class="subhead">SHOP_BASE</div>
+      <div class="table-wrap" id="shopBaseTable"></div>
+      <div class="subhead" style="margin-top:18px">EXTRA_SHOPS（今日分页补充）</div>
+      <div class="table-wrap" id="extraShopTable"></div>
+    </section>
+  </main>
+
+<script>
+(function () {
+  var METRIC_KEYS = ["sales","orders","units","clicks","cancelled","cancelled_sales","refund_orders","refund_sales"];
+  var METRIC_LABELS = {
+    sales: "总销售额",
+    orders: "总订单数",
+    units: "总销售件数",
+    clicks: "商品点击量",
+    cancelled: "已取消订单",
+    cancelled_sales: "已取消销售",
+    refund_orders: "退货退款订单",
+    refund_sales: "退货退款销售"
+  };
+  var data = null;
+  var statusEl = document.getElementById("status");
+
+  function setStatus(msg, kind) {
+    statusEl.textContent = msg || "";
+    statusEl.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function numInput(value, onChange) {
+    var inp = document.createElement("input");
+    inp.type = "number";
+    inp.step = "any";
+    inp.value = value;
+    function emit() {
+      var v = parseFloat(inp.value);
+      if (Number.isNaN(v)) v = 0;
+      onChange(v);
+    }
+    // change=失焦；input=滚轮/步进器即时联动
+    inp.addEventListener("change", emit);
+    inp.addEventListener("input", emit);
+    return inp;
+  }
+
+  function textInput(value, onChange) {
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.value = value;
+    inp.addEventListener("change", function () { onChange(inp.value); });
+    return inp;
+  }
+
+  function shiftMonthKey(key, delta) {
+    var m = /^(\d{4})-(\d{2})$/.exec(key || "");
+    if (!m) return null;
+    var y = parseInt(m[1], 10);
+    var mo = parseInt(m[2], 10) + delta;
+    while (mo < 1) { mo += 12; y -= 1; }
+    while (mo > 12) { mo -= 12; y += 1; }
+    return y + "-" + String(mo).padStart(2, "0");
+  }
+
+  function momPct(curr, prev) {
+    curr = Number(curr) || 0;
+    prev = Number(prev) || 0;
+    if (prev === 0) return curr === 0 ? 0 : 100;
+    return Math.round(((curr - prev) / Math.abs(prev)) * 10000) / 100;
+  }
+
+  function nowGmt8Parts() {
+    var d = new Date(Date.now() + 8 * 3600 * 1000);
+    return {
+      key: d.getUTCFullYear() + "-" + String(d.getUTCMonth() + 1).padStart(2, "0"),
+      day: d.getUTCDate()
+    };
+  }
+
+  function seriesLen(month, metric) {
+    var s = data.monthSeries && data.monthSeries[month];
+    var arr = s && s[metric || "sales"];
+    return Array.isArray(arr) ? arr.length : 0;
+  }
+
+  function sumSeries(month, metric, days) {
+    var s = data.monthSeries && data.monthSeries[month];
+    var arr = s && s[metric];
+    if (!Array.isArray(arr) || !arr.length) return null;
+    var n = Math.max(0, Math.min(days, arr.length));
+    var sum = 0;
+    for (var i = 0; i < n; i++) sum += Number(arr[i]) || 0;
+    return sum;
+  }
+
+  // 上月同期：当前未结束月用「今天日号」；其它月用自身序列天数（整月）
+  function samePeriodDays(month) {
+    var now = nowGmt8Parts();
+    var len = seriesLen(month, "sales");
+    if (month === now.key) {
+      var d = now.day;
+      if (len > 0) d = Math.min(d, len);
+      return Math.max(1, d);
+    }
+    return len > 0 ? len : 0;
+  }
+
+  function recomputeMonthMom(month) {
+    if (!data || !data.monthData || !data.monthData[month]) return;
+    var curr = data.monthData[month];
+    var prevKey = shiftMonthKey(month, -1);
+    var prev = prevKey && data.monthData[prevKey];
+    if (!curr.mom) curr.mom = {};
+    var now = nowGmt8Parts();
+    var days = samePeriodDays(month);
+    var prevLen = seriesLen(prevKey, "sales");
+    // 未结束的当前月：分子用你改的月汇总，分母用上月前 N 天（上月同期）
+    // 已结束月份：整月 vs 上月整月
+    var useSamePeriod = month === now.key && days > 0 && prevLen > 0;
+    METRIC_KEYS.forEach(function (k) {
+      var currVal = Number(curr[k]) || 0;
+      var prevVal = 0;
+      if (useSamePeriod) {
+        var part = sumSeries(prevKey, k, days);
+        prevVal = part == null ? (prev ? Number(prev[k]) || 0 : 0) : part;
+      } else if (prev) {
+        prevVal = Number(prev[k]) || 0;
+      }
+      curr.mom[k] = momPct(currVal, prevVal);
+    });
+  }
+
+  function recomputeMomsTouchedBy(month) {
+    recomputeMonthMom(month);
+    var next = shiftMonthKey(month, 1);
+    if (next && data.monthData[next]) recomputeMonthMom(next);
+  }
+
+  function recomputeAllMonthMoms() {
+    if (!data || !data.monthData) return;
+    Object.keys(data.monthData).sort().forEach(recomputeMonthMom);
+  }
+
+  function renderMetricBlock(targetId, block) {
+    var wrap = document.getElementById(targetId);
+    wrap.innerHTML = "";
+    var table = document.createElement("table");
+    var thead = document.createElement("thead");
+    thead.innerHTML = "<tr><th>指标</th><th>数值</th><th>环比 mom%</th></tr>";
+    table.appendChild(thead);
+    var tbody = document.createElement("tbody");
+    METRIC_KEYS.forEach(function (k) {
+      var tr = document.createElement("tr");
+      var td0 = document.createElement("td");
+      td0.textContent = METRIC_LABELS[k] || k;
+      var td1 = document.createElement("td");
+      td1.appendChild(numInput(block[k], function (v) { block[k] = v; }));
+      var td2 = document.createElement("td");
+      if (!block.mom) block.mom = {};
+      td2.appendChild(numInput(block.mom[k] || 0, function (v) { block.mom[k] = v; }));
+      tr.appendChild(td0); tr.appendChild(td1); tr.appendChild(td2);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+  }
+
+  function refreshMonthMomInputs(optMonth) {
+    var wrap = document.getElementById("monthTable");
+    if (!wrap) return;
+    Array.prototype.forEach.call(wrap.querySelectorAll("input[data-mom-month]"), function (inp) {
+      var month = inp.getAttribute("data-mom-month");
+      if (optMonth && month !== optMonth && month !== shiftMonthKey(optMonth, 1)) return;
+      var key = inp.getAttribute("data-mom-key");
+      var block = data.monthData[month];
+      if (!block || !block.mom) return;
+      var next = block.mom[key];
+      if (typeof next !== "number" || Number.isNaN(next)) next = 0;
+      if (String(inp.value) !== String(next)) inp.value = next;
+    });
+  }
+
+  function renderMonthTable() {
+    var wrap = document.getElementById("monthTable");
+    wrap.innerHTML = "";
+    var panel = document.getElementById("panel-month");
+    Array.prototype.slice.call(panel.querySelectorAll(".month-add-row")).forEach(function (el) {
+      el.remove();
+    });
+    var table = document.createElement("table");
+    var head = "<tr><th>月份</th>";
+    METRIC_KEYS.forEach(function (k) { head += "<th>" + (METRIC_LABELS[k] || k) + "</th><th>mom%</th>"; });
+    head += "<th></th></tr>";
+    table.innerHTML = "<thead>" + head + "</thead>";
+    var tbody = document.createElement("tbody");
+    Object.keys(data.monthData).sort().forEach(function (month) {
+      var block = data.monthData[month];
+      var tr = document.createElement("tr");
+      var tdM = document.createElement("td");
+      tdM.textContent = month;
+      tr.appendChild(tdM);
+      METRIC_KEYS.forEach(function (k) {
+        var td = document.createElement("td");
+        td.appendChild(numInput(block[k], function (v) {
+          block[k] = v;
+          recomputeMomsTouchedBy(month);
+          refreshMonthMomInputs(month);
+          setStatus("环比已随 " + month + " 汇总更新（记得点保存）", "ok");
+        }));
+        tr.appendChild(td);
+        var tdMom = document.createElement("td");
+        if (!block.mom) block.mom = {};
+        var momInp = numInput(block.mom[k] || 0, function (v) { block.mom[k] = v; });
+        momInp.setAttribute("data-mom-month", month);
+        momInp.setAttribute("data-mom-key", k);
+        tdMom.appendChild(momInp);
+        tr.appendChild(tdMom);
+      });
+      var tdAct = document.createElement("td");
+      var del = document.createElement("button");
+      del.className = "btn";
+      del.type = "button";
+      del.textContent = "删除";
+      del.addEventListener("click", function () {
+        if (!confirm("删除 " + month + "？")) return;
+        delete data.monthData[month];
+        if (data.monthSeries) delete data.monthSeries[month];
+        var next = shiftMonthKey(month, 1);
+        if (next && data.monthData[next]) recomputeMonthMom(next);
+        renderAll();
+      });
+      tdAct.appendChild(del);
+      tr.appendChild(tdAct);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+
+    var addRow = document.createElement("div");
+    addRow.className = "row month-add-row";
+    addRow.style.marginTop = "12px";
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.placeholder = "YYYY-MM";
+    var btn = document.createElement("button");
+    btn.className = "btn";
+    btn.type = "button";
+    btn.textContent = "新增月份";
+    btn.addEventListener("click", function () {
+      var key = (inp.value || "").trim();
+      if (!/^\d{4}-\d{2}$/.test(key)) {
+        setStatus("月份格式应为 YYYY-MM", "err");
+        return;
+      }
+      if (data.monthData[key]) {
+        setStatus("月份已存在", "err");
+        return;
+      }
+      var blank = {};
+      var mom = {};
+      METRIC_KEYS.forEach(function (k) { blank[k] = 0; mom[k] = 0; });
+      blank.mom = mom;
+      data.monthData[key] = blank;
+      if (!data.monthSeries[key]) {
+        var series = {};
+        METRIC_KEYS.forEach(function (k) { series[k] = []; });
+        data.monthSeries[key] = series;
+      }
+      recomputeMonthMom(key);
+      renderAll();
+      setStatus("已新增 " + key, "ok");
+    });
+    addRow.appendChild(inp);
+    addRow.appendChild(btn);
+    panel.appendChild(addRow);
+  }
+
+  function fillSeriesSelect() {
+    var sel = document.getElementById("seriesMonth");
+    var cur = sel.value;
+    sel.innerHTML = "";
+    Object.keys(data.monthSeries || {}).sort().forEach(function (m) {
+      var opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = m;
+      sel.appendChild(opt);
+    });
+    if (cur && data.monthSeries[cur]) sel.value = cur;
+    else if (data.monthSeries["2026-11"]) sel.value = "2026-11";
+  }
+
+  function renderSeriesTable() {
+    fillSeriesSelect();
+    var month = document.getElementById("seriesMonth").value;
+    var wrap = document.getElementById("seriesTable");
+    wrap.innerHTML = "";
+    if (!month || !data.monthSeries[month]) {
+      wrap.textContent = "无序列数据";
+      return;
+    }
+    var series = data.monthSeries[month];
+    var len = 0;
+    METRIC_KEYS.forEach(function (k) {
+      if (Array.isArray(series[k])) len = Math.max(len, series[k].length);
+    });
+    METRIC_KEYS.forEach(function (k) {
+      if (!Array.isArray(series[k])) series[k] = [];
+      while (series[k].length < len) series[k].push(0);
+    });
+
+    var table = document.createElement("table");
+    var head = "<tr><th>日</th>";
+    METRIC_KEYS.forEach(function (k) { head += "<th>" + (METRIC_LABELS[k] || k) + "</th>"; });
+    head += "</tr>";
+    table.innerHTML = "<thead>" + head + "</thead>";
+    var tbody = document.createElement("tbody");
+    for (var i = 0; i < len; i++) {
+      (function (dayIdx) {
+        var tr = document.createElement("tr");
+        var td0 = document.createElement("td");
+        td0.textContent = String(dayIdx + 1);
+        tr.appendChild(td0);
+        METRIC_KEYS.forEach(function (k) {
+          var td = document.createElement("td");
+          td.appendChild(numInput(series[k][dayIdx] || 0, function (v) { series[k][dayIdx] = v; }));
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      })(i);
+    }
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+  }
+
+  function renderShopTable(targetId, list) {
+    var wrap = document.getElementById(targetId);
+    wrap.innerHTML = "";
+    var table = document.createElement("table");
+    table.innerHTML = "<thead><tr><th>店铺</th><th>市场</th><th>权重 w</th><th></th></tr></thead>";
+    var tbody = document.createElement("tbody");
+    list.forEach(function (shop, idx) {
+      var tr = document.createElement("tr");
+      var tdN = document.createElement("td");
+      tdN.appendChild(textInput(shop.name, function (v) { shop.name = v; }));
+      var tdM = document.createElement("td");
+      tdM.appendChild(textInput(shop.market, function (v) { shop.market = v; }));
+      var tdW = document.createElement("td");
+      tdW.appendChild(numInput(shop.w, function (v) { shop.w = v; }));
+      var tdA = document.createElement("td");
+      var del = document.createElement("button");
+      del.className = "btn";
+      del.type = "button";
+      del.textContent = "删";
+      del.addEventListener("click", function () {
+        list.splice(idx, 1);
+        renderAll();
+      });
+      tdA.appendChild(del);
+      tr.appendChild(tdN); tr.appendChild(tdM); tr.appendChild(tdW); tr.appendChild(tdA);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+
+    var add = document.createElement("button");
+    add.className = "btn";
+    add.type = "button";
+    add.textContent = "新增店铺";
+    add.style.marginTop = "10px";
+    add.addEventListener("click", function () {
+      list.push({ name: "new.shop", market: "XX", w: 0 });
+      renderAll();
+    });
+    wrap.appendChild(add);
+  }
+
+  function renderAll() {
+    // avoid duplicating add-month rows
+    var monthPanel = document.getElementById("panel-month");
+    Array.prototype.slice.call(monthPanel.querySelectorAll(".row")).forEach(function (el) {
+      if (el.querySelector("input[placeholder='YYYY-MM']")) el.remove();
+    });
+    renderMetricBlock("todayTable", data.today);
+    renderMetricBlock("ydayTable", data.yesterday);
+    renderMonthTable();
+    renderSeriesTable();
+    renderShopTable("shopBaseTable", data.shopBase);
+    renderShopTable("extraShopTable", data.extraShops);
+  }
+
+  async function loadData() {
+    setStatus("加载中…");
+    var res = await fetch("/api/bi-data", { credentials: "same-origin" });
+    if (!res.ok) throw new Error("加载失败 " + res.status);
+    data = await res.json();
+    if (!data.extraShops) data.extraShops = [];
+    if (!data.shopBase) data.shopBase = [];
+    renderAll();
+    setStatus("已加载" + (data.updatedAt ? "（更新于 " + data.updatedAt + "）" : "（默认数据）"), "ok");
+  }
+
+  async function saveData() {
+    setStatus("保存中…");
+    document.getElementById("btnSave").disabled = true;
+    try {
+      // 不再强制重算月度环比，保留手改；需要批量重算请点「按上月同期重算全部环比」
+      var res = await fetch("/api/bi-data", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      var body = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(body.error || ("保存失败 " + res.status));
+      data.updatedAt = body.updatedAt || data.updatedAt;
+      setStatus("保存成功 " + (body.updatedAt || ""), "ok");
+    } catch (e) {
+      setStatus(String(e.message || e), "err");
+    } finally {
+      document.getElementById("btnSave").disabled = false;
+    }
+  }
+
+  async function resetData() {
+    if (!confirm("确认恢复默认数据？当前后台已保存的修改会被覆盖，且无法撤销。")) return;
+    var typed = prompt('请输入 RESET 确认恢复默认（此操作会清空你改过的数据）');
+    if (typed !== "RESET") {
+      setStatus("已取消恢复默认", "err");
+      return;
+    }
+    setStatus("恢复中…");
+    try {
+      var res = await fetch("/api/bi-data?reset=1&confirm=RESET", {
+        method: "POST",
+        credentials: "same-origin"
+      });
+      var body = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(body.error || ("恢复失败 " + res.status));
+      data = body.data;
+      renderAll();
+      setStatus("已恢复默认", "ok");
+    } catch (e) {
+      setStatus(String(e.message || e), "err");
+    }
+  }
+
+  document.getElementById("tabs").addEventListener("click", function (e) {
+    var btn = e.target.closest(".tab");
+    if (!btn) return;
+    var tab = btn.getAttribute("data-tab");
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (el) {
+      el.classList.toggle("active", el === btn);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".panel"), function (el) {
+      el.classList.toggle("active", el.id === "panel-" + tab);
+    });
+  });
+
+  document.getElementById("seriesMonth").addEventListener("change", renderSeriesTable);
+  document.getElementById("btnSave").addEventListener("click", saveData);
+  document.getElementById("btnReset").addEventListener("click", resetData);
+  document.getElementById("btnRecomputeMom").addEventListener("click", function () {
+    recomputeAllMonthMoms();
+    refreshMonthMomInputs();
+    setStatus("已按上月同期重算全部月度环比（记得点保存）", "ok");
+  });
+
+  loadData().catch(function (e) {
+    setStatus(String(e.message || e), "err");
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+/* eslint-disable no-undef */
+var files = 'static/css/main.1c7a151b.css,static/js/runtime~main.8a5e172a.js,static/js/main.ef5fda7b.js';
+var buildTime = 'Tue Oct 27 2026 12:03:54 GMT+0800 (Singapore Standard Time)';
+var buildEnv = 'live';
+var buildRegion = 'cn';
+var webHost = window.location.href;
+var isVisitingCN = webHost.indexOf('cn') > -1;
+var cdnDomain = isVisitingCN
+  ? 'https://deo.shopeesz.com/shopee/shopee-sellerplatformdrm-' + buildEnv + '-' + buildRegion + '/'
+  : `https://deo.shopeemobile.com/shopee/shopee-sellerplatformdrm-` + buildEnv + '-' + buildRegion + '/';
+function createAssetScriptTags(fileNames) {
+  console.log('Drm SDK Build Time: ', buildTime);
+  var files = fileNames.split(',');
+  var fileLength = files.length;
+  var fragment = document.createDocumentFragment();
+  if (fileLength) {
+    for (var i = 0; i < fileLength; i++) {
+      var jsFile = files[i].indexOf('js') > -1;
+      var cssFile = files[i].indexOf('css') > -1;
+      var fileUrl = cdnDomain + files[i];
+      if (jsFile) {
+        var jstag = document.createElement('script');
+        jstag.src = fileUrl;
+        jstag.type = 'text/javascript';
+        jstag.defer = 'defer';
+        jstag.charset = 'utf-8';
+        if (jstag) {
+          fragment.appendChild(jstag);
+        }
+      } else if (cssFile) {
+        var csstag = document.createElement('link');
+        csstag.href = fileUrl;
+        csstag.rel = 'stylesheet';
+        csstag.type = 'text/css';
+        if (csstag) {
+          fragment.appendChild(csstag);
+        }
+      }
+    }
+    document.body.appendChild(fragment);
+  }
+}
+// Load static resources
+createAssetScriptTags(files);

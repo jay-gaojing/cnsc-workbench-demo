@@ -1,0 +1,112 @@
+function render() {
+  try {
+    let html = `<div style="box-sizing: border-box;cursor: pointer;height: 48px;user-select: none;width: 48px;z-index: 10;display: flex;align-items: center;justify-content: center;" id="cs-chat-panel-entry-container"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M25.503 19.0641V14.6286C24.8376 9.97631 20.8366 6.4 16.0002 6.4C11.2647 6.4 7.32995 9.82885 6.54336 14.3393V19.1577C6.54336 19.6229 6.16623 20 5.70102 20C4.17801 20 2.94336 18.7654 2.94336 17.2423V15.7577C2.94336 14.3329 4.0238 13.1605 5.41002 13.0152C6.71087 8.3904 10.9596 5 16.0002 5C21.0366 5 25.2825 8.38471 26.5872 13.0035C28.2106 13.0808 29.503 14.4215 29.503 16.0641V16.9359C29.503 18.6282 28.1312 20 26.439 20C25.9221 20 25.503 19.581 25.503 19.0641ZM17.8731 26.1226C17.8731 25.4322 17.3135 24.8726 16.6231 24.8726H15.1231C14.4328 24.8726 13.8731 25.4322 13.8731 26.1226C13.8731 26.8129 14.4328 27.3726 15.1231 27.3726H16.6231C17.3135 27.3726 17.8731 26.8129 17.8731 26.1226Z" fill="#EE4D2D"/>
+<path d="M8 16C8 11.5817 11.5817 8 16 8C20.4183 8 24 11.5817 24 16V18C24 21.3137 21.3137 24 18 24H14C10.6863 24 8 21.3137 8 18L8 16Z" fill="#EE4D2D"/>
+<path d="M18.7897 13.4838V13.4838C17.9512 13.8196 17.2379 14.4079 16.7486 15.1671L16.607 15.3868C16.6042 15.3912 16.6071 15.397 16.6122 15.3973L16.6495 15.4001C17.5465 15.4664 18.4311 15.6491 19.2811 15.9435L19.4443 16" stroke="white" stroke-width="1.1" stroke-linecap="round"/>
+<path d="M11.9131 14.4723C11.9131 13.8648 12.4056 13.3723 13.0131 13.3723C13.6206 13.3723 14.1131 13.8648 14.1131 14.4723V15.7723C14.1131 16.3798 13.6206 16.8723 13.0131 16.8723C12.4056 16.8723 11.9131 16.3798 11.9131 15.7723V14.4723Z" fill="white"/>
+<path d="M26.2998 17.5V19C26.2998 22.866 23.1658 26 19.2998 26H15.2998" stroke="#EE4D2D" stroke-width="0.8"/>
+</svg>
+</div>`;
+
+    if (window.getInitOptions) {
+      const initOptions = window.getInitOptions();
+      if (initOptions.isSellerAIAssistant) {
+        const BASE_DOMAIN_ALL = {
+          sg: 'shopee.sg',
+          my: 'shopee.com.my',
+          th: 'shopee.co.th',
+          tw: 'shopee.tw',
+          vn: 'shopee.vn',
+          id: 'shopee.co.id',
+          ph: 'shopee.ph',
+          br: 'shopee.com.br',
+          mx: 'shopee.com.mx',
+          co: 'shopee.com.co',
+          cl: 'shopee.cl',
+          ar: 'shopee.com.ar',
+          pl: 'shopee.pl',
+          es: 'shopee.es',
+          fr: 'shopee.fr',
+          in: 'shopee.in',
+          cn: 'shopee.cn',
+        };
+
+        const envMap = {
+          test: 'test.',
+          uat: 'uat.',
+          staging: 'staging.',
+          live: '',
+        };
+
+        const avatarUrl = `https://cschat.${envMap[buildEnv]}${BASE_DOMAIN_ALL[buildRegion]}/${buildRegion === 'br' ? 'seller_ai_avatar_br.png' : 'seller_ai_avatar.png'}`;
+        html = `<div style="box-sizing: border-box;cursor: pointer;height: 48px;user-select: none;width: 48px;z-index: 10;display: flex;align-items: center;justify-content: center;" id="cs-chat-panel-entry-container">
+        <div style="box-sizing: border-box;cursor: pointer;height: 48px;user-select: none;width: 48px;z-index: 10;display: flex;align-items: center;justify-content: center;">
+        <img src="${avatarUrl}" alt="Seller AI Assistant" width="32" height="32"/>
+        </div>
+      </div>`;
+      }
+    }
+
+    const container = document.body.querySelector('#shopee-cs-chat-icon-container');
+    if (!container) {
+      return;
+    }
+    if (container.querySelector('#cs-chat-panel-entry-container')) {
+      return;
+    }
+
+    container.innerHTML = html;
+  } catch {
+    // do nothing
+  }
+}
+
+var files = 'static/css/main.74e435d8.css,static/js/main.5ca4620e.js,static/js/runtime~main.37720960.js,static/css/chatbotsdk.5f7eb7b6.css,static/css/framework.372edf62.css,static/css/cs.19677cc3.css,static/css/chatbotui.a0060f75.css,static/js/chatbotsdk.4ecc9cda.js,static/js/framework.c4a57dbb.js,static/js/cs.9baacf59.js,static/js/chatbotui.28f89c76.js,static/js/company.97814ec5.js,static/js/363.b1f0a9ad.js';
+var buildTime = 'Wed Oct 28 2026 17:22:37 GMT+0800 (Singapore Standard Time)';
+var buildEnv = 'live';
+var buildRegion = 'cn';
+var host = window.location.href;
+var isVisitingMall = host.indexOf('seller') === -1;
+var isVisitingCN = host.indexOf('cn') > -1;
+var cdnDomain = isVisitingCN
+  ? 'https://deo.shopeesz.com/shopee/shopee-cschat-' + buildEnv + '-' + buildRegion + '/'
+  : `https://cs.deo.shopeemobile.com/shopee/shopee-cschat-` + buildEnv + '-' + buildRegion + '/';
+function createAssetScriptTags(fileNames) {
+  window.csChatLoadFileStart = Date.now();
+  console.log('CsChat Build Time: ', buildTime);
+  var files = fileNames.split(',');
+  var fileLength = files.length;
+  var fragment = document.createDocumentFragment();
+  if (fileLength) {
+    for (var i = 0; i < fileLength; i++) {
+      var jsFile = files[i].indexOf('js') > -1;
+      var cssFile = files[i].indexOf('css') > -1;
+      var fileUrl = cdnDomain + files[i];
+      if (jsFile) {
+        var jstag = document.createElement('script');
+        jstag.src = fileUrl;
+        jstag.type = 'text/javascript';
+        jstag.defer = 'defer';
+        jstag.charset = 'utf-8';
+        if (jstag) {
+          fragment.appendChild(jstag);
+        }
+      } else if (cssFile) {
+        var csstag = document.createElement('link');
+        csstag.href = fileUrl;
+        csstag.rel = 'stylesheet';
+        csstag.type = 'text/css';
+        if (csstag) {
+          fragment.appendChild(csstag);
+        }
+      }
+    }
+    document.body.appendChild(fragment);
+  }
+}
+
+render();
+
+// Load static resources
+createAssetScriptTags(files);

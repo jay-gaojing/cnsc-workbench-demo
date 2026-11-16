@@ -1,0 +1,11 @@
+name = "cnsc-workbench-demo"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "cf-pages"
+
+[[kv_namespaces]]
+binding = "BI_DATA"
+id = "0bc0762f8ec44c23b10571c48c3822d1"
+preview_id = "7f231744d9144285ae6f7850cc7da7b2"
+
+[vars]
+DEMO_GATE_PASSWORD = "demo8688"

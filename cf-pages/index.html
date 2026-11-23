@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<style id="bi-home-hide">
+html:not(.bi-home-ready) .metrics-item-info-count,
+html:not(.bi-home-ready) .sales-data .chart-number,
+html:not(.bi-home-ready) .sales-data .order-number.detail-data,
+html:not(.bi-home-ready) .sales-data .order-sub-text{
+  visibility:hidden!important
+}
+</style>
+<script id="bi-data-preload">
+window.__BI_DATA_PROMISE__=fetch("/api/bi-data",{credentials:"same-origin"})
+  .then(function(r){return r.ok?r.json():null})
+  .catch(function(){return null});
+setTimeout(function(){document.documentElement.classList.add("bi-home-ready")},4000);
+</script>
+
 <script id="cnsc-shop-id-url">
 (function () {
   try {
@@ -37002,23 +37017,38 @@ body.cb-dev-env.cb-show-breakpoints::before{
     return true;
   }
 
-  function boot() {
-    if (!paint()) {
-      var n = 0;
-      var t = setInterval(function () {
-        n++;
-        if (paint() || n > 40) clearInterval(t);
-      }, 100);
-    }
-    window.addEventListener("resize", function () {
-      document.querySelectorAll(".sales-data .chart-box canvas.chart").forEach(function (c) {
-        c.dataset.biChartPainted = "0";
-      });
-      paint();
-    });
+  function reveal() {
+    document.documentElement.classList.add("bi-home-ready");
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
-  else boot();
+  function boot() {
+    apply();
+    reveal();
+    [100, 300, 800, 1500, 3000, 6000].forEach(function (ms) {
+      setTimeout(apply, ms);
+    });
+    if (window.__HOME_METRICS_OBS__) return;
+    try {
+      var obs = new MutationObserver(function () {
+        clearTimeout(window.__HOME_METRICS_T__);
+        window.__HOME_METRICS_T__ = setTimeout(apply, 80);
+      });
+      obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+      window.__HOME_METRICS_OBS__ = obs;
+    } catch (e) {}
+  }
+
+  var ready = window.__BI_DATA_PROMISE__ || fetch("/api/bi-data", { credentials: "same-origin" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .catch(function () { return null; });
+  window.__BI_DATA_PROMISE__ = ready;
+  ready.then(function (remote) {
+    applyRemote(remote);
+    function go() {
+      boot();
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go);
+    else go();
+  });
 })();
 </script>
 <!-- /extract-home-bi-chart-js -->

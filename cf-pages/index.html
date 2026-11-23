@@ -37314,8 +37314,12 @@ body.cb-dev-env.cb-show-breakpoints::before{
     var node;
     while ((node = walker.nextNode())) {
       var t = node.nodeValue || "";
-      if (t.indexOf("环比") >= 0 || /\d+(\.\d+)?\s*%/.test(t)) {
-        node.nodeValue = t.replace(/\d+(?:\.\d+)?\s*%/, abs + "%");
+      if (t.indexOf("环比") >= 0 || /\d+(\.\d+)?\s*%/.test(t) || /—%/.test(t)) {
+        if (/\d+(?:\.\d+)?\s*%/.test(t) || /—%/.test(t)) {
+          node.nodeValue = t.replace(/(?:\d+(?:\.\d+)?|—)\s*%/, abs + "%");
+        } else {
+          node.nodeValue = "环比昨日 " + abs + "% ";
+        }
       }
     }
     var isFlat = Math.abs(mom) < 0.005;

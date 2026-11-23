@@ -37377,7 +37377,13 @@ body.cb-dev-env.cb-show-breakpoints::before{
     patchShop();
     var salesEl = document.querySelector(".sales-data .chart-number");
     if (salesEl) {
-      salesEl.innerHTML = salesEl.innerHTML.replace(/[0-9][0-9,]*(?:\.[0-9]+)?/, DATA.sales);
+      var raw = salesEl.innerHTML || "";
+      if (/[0-9][0-9,]*(?:\.[0-9]+)?/.test(raw)) {
+        salesEl.innerHTML = raw.replace(/[0-9][0-9,]*(?:\.[0-9]+)?/, DATA.sales);
+      } else {
+        var cur = (raw.match(/[￥¥$]/) || ["￥"])[0];
+        salesEl.textContent = cur + (DATA.sales || "");
+      }
     }
     var values = [];
     document.querySelectorAll(".sales-data .order-number.detail-data").forEach(function (el) {

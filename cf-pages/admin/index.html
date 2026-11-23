@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive">
-<title>商业分析数据后台</title>
+<title>展示数据后台</title>
 <style>
   :root {
     --brand: #EE4D2D;
@@ -82,24 +82,39 @@
 </head>
 <body>
   <header class="top">
-    <div class="brand"><span class="logo">S</span>商业分析数据后台</div>
+    <div class="brand"><span class="logo">S</span>展示数据后台</div>
     <div class="top-actions">
-      <a class="link" href="/datacenter/home/?cnsc_shop_id=864505556" target="_blank">打开商业分析</a>
+      <a class="link" href="/home.html" target="_blank">预览主页</a>
+      <a class="link" href="/datacenter/home/?cnsc_shop_id=864505556" target="_blank">预览商业分析</a>
       <button class="btn" id="btnReset" type="button">恢复默认</button>
-      <button class="btn btn-primary" id="btnSave" type="button">保存</button>
+      <button class="btn btn-primary" id="btnSave" type="button">保存并同步</button>
     </div>
   </header>
   <main class="wrap">
     <div class="status" id="status">加载中…</div>
     <div class="tabs" id="tabs">
-      <button class="tab active" data-tab="preset">今日 / 昨天</button>
+      <button class="tab active" data-tab="home">主页展示</button>
+      <button class="tab" data-tab="preset">今日 / 昨天</button>
       <button class="tab" data-tab="month">按月汇总</button>
       <button class="tab" data-tab="series">按日序列</button>
       <button class="tab" data-tab="shops">店铺权重</button>
     </div>
 
-    <section class="panel active" id="panel-preset">
-      <p class="hint">改汇总数字即可；小时折线会按总数自动重算。</p>
+    <section class="panel active" id="panel-home">
+      <p class="hint">下次对外展示前，在这里改数字后点「保存并同步」。主页待办 + 主页商业分析卡片，都会立刻跟着变；商业分析页的「今日」也会同步成同一套。</p>
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn" type="button" id="btnNudgeHome">一键换成新展示数据</button>
+      </div>
+      <div class="subhead">店铺名</div>
+      <div class="row" id="homeShopRow"></div>
+      <div class="subhead" style="margin-top:18px">待办清单（主页顶部）</div>
+      <div class="table-wrap" id="homeTodoTable"></div>
+      <div class="subhead" style="margin-top:18px">商业分析卡片 / 今日数据（主页与商业分析页共用）</div>
+      <div class="table-wrap" id="homeTodayTable"></div>
+    </section>
+
+    <section class="panel" id="panel-preset">
+      <p class="hint">改汇总数字即可；小时折线会按总数自动重算。主页「商业分析」卡片也读今日这组数。</p>
       <div class="subhead">今日实时</div>
       <div class="table-wrap" id="todayTable"></div>
       <div class="subhead" style="margin-top:18px">昨天</div>
@@ -119,8 +134,10 @@
         <label class="field">月份
           <select id="seriesMonth"></select>
         </label>
+        <button class="btn" type="button" id="btnEnsureSeriesDays">按当月天数生成日行</button>
+        <button class="btn" type="button" id="btnAddSeriesDay">加一天</button>
       </div>
-      <p class="hint">按日数组，一天一个数；保存后折线图用这里的序列。</p>
+      <p class="hint">按日数组，一天一个数；保存后折线图用这里的序列。若要加 2025-09 及更早月份：先到「按月汇总」新增 YYYY-MM，再回这里选月份填日数据（空月份点「按当月天数生成日行」）。</p>
       <div class="table-wrap" id="seriesTable"></div>
     </section>
 
@@ -144,6 +161,27 @@
     cancelled_sales: "已取消销售",
     refund_orders: "退货退款订单",
     refund_sales: "退货退款销售"
+  };
+  var HOME_TODO_KEYS = [
+    "未付款",
+    "待处理出货",
+    "已处理出货",
+    "待取消",
+    "待处理退货/退款",
+    "已售完",
+    "已禁卖/搜索排名降低"
+  ];
+  var DEFAULT_HOME = {
+    shop: "青羊区星氧百货店",
+    todo: {
+      "未付款": 5,
+      "待处理出货": 9,
+      "已处理出货": 21,
+      "待取消": 12,
+      "待处理退货/退款": 0,
+      "已售完": 4,
+      "已禁卖/搜索排名降低": 1
+    }
   };
   var data = null;
   var statusEl = document.getElementById("status");
@@ -185,6 +223,36 @@
     while (mo < 1) { mo += 12; y -= 1; }
     while (mo > 12) { mo -= 12; y += 1; }
     return y + "-" + String(mo).padStart(2, "0");
+  }
+
+  function daysInMonthKey(key) {
+    var m = /^(\d{4})-(\d{2})$/.exec(key || "");
+    if (!m) return 0;
+    var y = parseInt(m[1], 10);
+    var mo = parseInt(m[2], 10);
+    return new Date(y, mo, 0).getDate();
+  }
+
+  function ensureMonthSeries(key, preferDays) {
+    if (!data.monthSeries) data.monthSeries = {};
+    if (!data.monthSeries[key]) {
+      var blank = {};
+      METRIC_KEYS.forEach(function (k) { blank[k] = []; });
+      data.monthSeries[key] = blank;
+    }
+    var series = data.monthSeries[key];
+    var target = preferDays || 0;
+    if (!target) {
+      METRIC_KEYS.forEach(function (k) {
+        if (Array.isArray(series[k])) target = Math.max(target, series[k].length);
+      });
+    }
+    if (!target) target = daysInMonthKey(key);
+    METRIC_KEYS.forEach(function (k) {
+      if (!Array.isArray(series[k])) series[k] = [];
+      while (series[k].length < target) series[k].push(0);
+    });
+    return series;
   }
 
   function momPct(curr, prev) {
@@ -386,14 +454,10 @@
       METRIC_KEYS.forEach(function (k) { blank[k] = 0; mom[k] = 0; });
       blank.mom = mom;
       data.monthData[key] = blank;
-      if (!data.monthSeries[key]) {
-        var series = {};
-        METRIC_KEYS.forEach(function (k) { series[k] = []; });
-        data.monthSeries[key] = series;
-      }
+      ensureMonthSeries(key, daysInMonthKey(key));
       recomputeMonthMom(key);
       renderAll();
-      setStatus("已新增 " + key, "ok");
+      setStatus("已新增 " + key + "（含 " + daysInMonthKey(key) + " 天日序列）", "ok");
     });
     addRow.appendChild(inp);
     addRow.appendChild(btn);
@@ -404,14 +468,17 @@
     var sel = document.getElementById("seriesMonth");
     var cur = sel.value;
     sel.innerHTML = "";
-    Object.keys(data.monthSeries || {}).sort().forEach(function (m) {
+    var keys = {};
+    Object.keys(data.monthSeries || {}).forEach(function (m) { keys[m] = true; });
+    Object.keys(data.monthData || {}).forEach(function (m) { keys[m] = true; });
+    Object.keys(keys).sort().forEach(function (m) {
       var opt = document.createElement("option");
       opt.value = m;
       opt.textContent = m;
       sel.appendChild(opt);
     });
-    if (cur && data.monthSeries[cur]) sel.value = cur;
-    else if (data.monthSeries["2026-11"]) sel.value = "2026-11";
+    if (cur && keys[cur]) sel.value = cur;
+    else if (keys["2026-11"]) sel.value = "2026-11";
   }
 
   function renderSeriesTable() {
@@ -419,19 +486,19 @@
     var month = document.getElementById("seriesMonth").value;
     var wrap = document.getElementById("seriesTable");
     wrap.innerHTML = "";
-    if (!month || !data.monthSeries[month]) {
-      wrap.textContent = "无序列数据";
+    if (!month) {
+      wrap.textContent = "请先在「按月汇总」新增月份，或选择已有月份";
       return;
     }
-    var series = data.monthSeries[month];
+    var series = ensureMonthSeries(month);
     var len = 0;
     METRIC_KEYS.forEach(function (k) {
       if (Array.isArray(series[k])) len = Math.max(len, series[k].length);
     });
-    METRIC_KEYS.forEach(function (k) {
-      if (!Array.isArray(series[k])) series[k] = [];
-      while (series[k].length < len) series[k].push(0);
-    });
+    if (!len) {
+      wrap.textContent = "该月还没有日行，点上方「按当月天数生成日行」";
+      return;
+    }
 
     var table = document.createElement("table");
     var head = "<tr><th>日</th>";
@@ -499,12 +566,122 @@
     wrap.appendChild(add);
   }
 
+  function ensureHome() {
+    if (!data.home || typeof data.home !== "object") data.home = JSON.parse(JSON.stringify(DEFAULT_HOME));
+    if (!data.home.todo || typeof data.home.todo !== "object") data.home.todo = {};
+    HOME_TODO_KEYS.forEach(function (k) {
+      var v = data.home.todo[k];
+      var n = typeof v === "number" ? v : parseInt(String(v == null ? "" : v), 10);
+      data.home.todo[k] = Number.isFinite(n) ? n : DEFAULT_HOME.todo[k];
+    });
+    if (typeof data.home.shop !== "string" || !data.home.shop.trim()) {
+      data.home.shop = DEFAULT_HOME.shop;
+    }
+  }
+
+  function nudgeHomeDemoData() {
+    ensureHome();
+    if (!data.today) return;
+    if (!data.today.mom) data.today.mom = {};
+    // Slightly different each time so next exhibition doesn't look identical.
+    var sales = Math.round((3200 + Math.random() * 2800) * 100) / 100;
+    var orders = Math.round(22 + Math.random() * 28);
+    var units = Math.round(orders * (1.3 + Math.random() * 0.7));
+    var clicks = Math.round(2200 + Math.random() * 1800);
+    data.today.sales = sales;
+    data.today.orders = orders;
+    data.today.units = units;
+    data.today.clicks = clicks;
+    data.today.mom.sales = Math.round((-8 + Math.random() * 16) * 100) / 100;
+    data.today.mom.orders = Math.round((-8 + Math.random() * 16) * 100) / 100;
+    data.today.mom.units = Math.round((-8 + Math.random() * 16) * 100) / 100;
+    data.today.mom.clicks = Math.round((-8 + Math.random() * 16) * 100) / 100;
+    data.home.todo["未付款"] = Math.round(2 + Math.random() * 10);
+    data.home.todo["待处理出货"] = Math.round(4 + Math.random() * 14);
+    data.home.todo["已处理出货"] = Math.round(12 + Math.random() * 24);
+    data.home.todo["待取消"] = Math.round(3 + Math.random() * 14);
+    data.home.todo["待处理退货/退款"] = Math.round(Math.random() * 3);
+    data.home.todo["已售完"] = Math.round(1 + Math.random() * 8);
+    data.home.todo["已禁卖/搜索排名降低"] = Math.round(Math.random() * 3);
+    renderHomePanel();
+    setStatus("已生成新展示数据（还未保存，请点「保存并同步」）", "ok");
+  }
+
+  function renderHomePanel() {
+    ensureHome();
+    var shopRow = document.getElementById("homeShopRow");
+    shopRow.innerHTML = "";
+    var lab = document.createElement("label");
+    lab.className = "field";
+    lab.textContent = "店铺显示名";
+    var inp = textInput(data.home.shop, function (v) { data.home.shop = v; });
+    inp.style.minWidth = "280px";
+    lab.appendChild(inp);
+    shopRow.appendChild(lab);
+
+    var todoWrap = document.getElementById("homeTodoTable");
+    todoWrap.innerHTML = "";
+    var table = document.createElement("table");
+    var thead = document.createElement("thead");
+    thead.innerHTML = "<tr><th>待办项</th><th>数量</th></tr>";
+    table.appendChild(thead);
+    var tbody = document.createElement("tbody");
+    HOME_TODO_KEYS.forEach(function (k) {
+      var tr = document.createElement("tr");
+      var tdN = document.createElement("td");
+      tdN.textContent = k;
+      var tdV = document.createElement("td");
+      tdV.appendChild(numInput(data.home.todo[k], function (v) {
+        data.home.todo[k] = Math.round(v);
+      }));
+      tr.appendChild(tdN);
+      tr.appendChild(tdV);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    todoWrap.appendChild(table);
+
+    var todayWrap = document.getElementById("homeTodayTable");
+    todayWrap.innerHTML = "";
+    if (!data.today) return;
+    if (!data.today.mom) data.today.mom = {};
+    var ttable = document.createElement("table");
+    ttable.innerHTML = "<thead><tr><th>指标</th><th>今日数值</th><th>环比 %</th></tr></thead>";
+    var tb = document.createElement("tbody");
+    [
+      ["sales", "总销售额"],
+      ["orders", "总订单数"],
+      ["clicks", "商品点击量"],
+      ["units", "总销售件数"]
+    ].forEach(function (pair) {
+      var key = pair[0], label = pair[1];
+      var tr = document.createElement("tr");
+      var td0 = document.createElement("td");
+      td0.textContent = label;
+      var td1 = document.createElement("td");
+      td1.appendChild(numInput(data.today[key], function (v) {
+        data.today[key] = key === "sales" ? Math.round(v * 100) / 100 : Math.round(v);
+      }));
+      var td2 = document.createElement("td");
+      td2.appendChild(numInput(data.today.mom[key] || 0, function (v) {
+        data.today.mom[key] = Math.round(v * 100) / 100;
+      }));
+      tr.appendChild(td0);
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      tb.appendChild(tr);
+    });
+    ttable.appendChild(tb);
+    todayWrap.appendChild(ttable);
+  }
+
   function renderAll() {
     // avoid duplicating add-month rows
     var monthPanel = document.getElementById("panel-month");
     Array.prototype.slice.call(monthPanel.querySelectorAll(".row")).forEach(function (el) {
       if (el.querySelector("input[placeholder='YYYY-MM']")) el.remove();
     });
+    renderHomePanel();
     renderMetricBlock("todayTable", data.today);
     renderMetricBlock("ydayTable", data.yesterday);
     renderMonthTable();
@@ -520,6 +697,7 @@
     data = await res.json();
     if (!data.extraShops) data.extraShops = [];
     if (!data.shopBase) data.shopBase = [];
+    ensureHome();
     renderAll();
     setStatus("已加载" + (data.updatedAt ? "（更新于 " + data.updatedAt + "）" : "（默认数据）"), "ok");
   }
@@ -579,11 +757,49 @@
     Array.prototype.forEach.call(document.querySelectorAll(".panel"), function (el) {
       el.classList.toggle("active", el.id === "panel-" + tab);
     });
+    if (tab === "home") renderHomePanel();
   });
 
   document.getElementById("seriesMonth").addEventListener("change", renderSeriesTable);
+  document.getElementById("btnEnsureSeriesDays").addEventListener("click", function () {
+    var month = document.getElementById("seriesMonth").value;
+    if (!month) {
+      setStatus("请先选择月份", "err");
+      return;
+    }
+    if (!data.monthData[month]) {
+      var blank = {};
+      var mom = {};
+      METRIC_KEYS.forEach(function (k) { blank[k] = 0; mom[k] = 0; });
+      blank.mom = mom;
+      data.monthData[month] = blank;
+    }
+    ensureMonthSeries(month, daysInMonthKey(month));
+    renderSeriesTable();
+    setStatus(month + " 已生成 " + daysInMonthKey(month) + " 天（记得点保存）", "ok");
+  });
+  document.getElementById("btnAddSeriesDay").addEventListener("click", function () {
+    var month = document.getElementById("seriesMonth").value;
+    if (!month) {
+      setStatus("请先选择月份", "err");
+      return;
+    }
+    var series = ensureMonthSeries(month);
+    var len = 0;
+    METRIC_KEYS.forEach(function (k) {
+      if (Array.isArray(series[k])) len = Math.max(len, series[k].length);
+    });
+    METRIC_KEYS.forEach(function (k) {
+      if (!Array.isArray(series[k])) series[k] = [];
+      while (series[k].length < len) series[k].push(0);
+      series[k].push(0);
+    });
+    renderSeriesTable();
+    setStatus(month + " 已加第 " + (len + 1) + " 天（记得点保存）", "ok");
+  });
   document.getElementById("btnSave").addEventListener("click", saveData);
   document.getElementById("btnReset").addEventListener("click", resetData);
+  document.getElementById("btnNudgeHome").addEventListener("click", nudgeHomeDemoData);
   document.getElementById("btnRecomputeMom").addEventListener("click", function () {
     recomputeAllMonthMoms();
     refreshMonthMomInputs();

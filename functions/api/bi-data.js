@@ -16,6 +16,29 @@ const METRIC_KEYS = [
   "refund_sales",
 ];
 
+const HOME_TODO_KEYS = [
+  "未付款",
+  "待处理出货",
+  "已处理出货",
+  "待取消",
+  "待处理退货/退款",
+  "已售完",
+  "已禁卖/搜索排名降低",
+];
+
+const DEFAULT_HOME = {
+  shop: "青羊区星氧百货店",
+  todo: {
+    未付款: 5,
+    待处理出货: 9,
+    已处理出货: 21,
+    待取消: 12,
+    "待处理退货/退款": 0,
+    已售完: 4,
+    "已禁卖/搜索排名降低": 1,
+  },
+};
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -56,6 +79,35 @@ function validateMetricBlock(block, label) {
   return null;
 }
 
+function normalizeHome(home) {
+  const src = isPlainObject(home) ? home : {};
+  const todoSrc = isPlainObject(src.todo) ? src.todo : {};
+  const todo = {};
+  for (const k of HOME_TODO_KEYS) {
+    const raw = todoSrc[k];
+    const n = typeof raw === "number" ? raw : parseInt(String(raw ?? ""), 10);
+    todo[k] = Number.isFinite(n) ? n : DEFAULT_HOME.todo[k];
+  }
+  return {
+    shop: typeof src.shop === "string" && src.shop.trim() ? src.shop.trim() : DEFAULT_HOME.shop,
+    todo,
+  };
+}
+
+function validateHome(home) {
+  if (home == null) return null;
+  if (!isPlainObject(home)) return "home must be object";
+  if (home.shop != null && typeof home.shop !== "string") return "home.shop must be string";
+  if (home.todo != null) {
+    if (!isPlainObject(home.todo)) return "home.todo must be object";
+    for (const [k, v] of Object.entries(home.todo)) {
+      const n = typeof v === "number" ? v : parseInt(String(v), 10);
+      if (!Number.isFinite(n)) return `home.todo.${k} must be number`;
+    }
+  }
+  return null;
+}
+
 function validatePayload(data) {
   if (!isPlainObject(data)) return "root must be object";
   if (!isPlainObject(data.monthData)) return "monthData required";
@@ -67,6 +119,9 @@ function validatePayload(data) {
   if (errT) return errT;
   const errY = validateMetricBlock(data.yesterday, "yesterday");
   if (errY) return errY;
+
+  const errH = validateHome(data.home);
+  if (errH) return errH;
 
   for (const [key, block] of Object.entries(data.monthData)) {
     if (!/^\d{4}-\d{2}$/.test(key)) return `bad monthData key ${key}`;
@@ -99,6 +154,12 @@ function validatePayload(data) {
   return null;
 }
 
+function withHome(data) {
+  if (!isPlainObject(data)) return data;
+  data.home = normalizeHome(data.home);
+  return data;
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const method = request.method.toUpperCase();
@@ -124,7 +185,7 @@ export async function onRequest(context) {
         if (raw) data = raw;
       }
       if (!data) data = await loadDefault(request);
-      return json(data);
+      return json(withHome(data));
     } catch (e) {
       return json({ ok: false, error: String(e && e.message ? e.message : e) }, 500);
     }
@@ -142,7 +203,7 @@ export async function onRequest(context) {
       );
     }
     try {
-      const data = await loadDefault(request);
+      const data = withHome(await loadDefault(request));
       if (kv) await kv.put(KV_KEY, JSON.stringify(data));
       return json({ ok: true, data });
     } catch (e) {
@@ -162,6 +223,7 @@ export async function onRequest(context) {
     }
     const err = validatePayload(body);
     if (err) return json({ ok: false, error: err }, 400);
+    body = withHome(body);
     body.version = body.version || 1;
     body.updatedAt = new Date().toISOString();
     await kv.put(KV_KEY, JSON.stringify(body));

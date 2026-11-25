@@ -22118,36 +22118,6 @@ body.cb-dev-env.cb-show-breakpoints::before{
   
 
 
-<script id="wallet-local-nav">
-(function () {
-  // Hide empty leftover submenu wrappers if any
-  document.querySelectorAll('.ant-menu-item').forEach(function (li) {
-    var t = (li.textContent || '').trim();
-    if (t === '钱包开户设置' || t === '' || t === '账户设置' || t === '回款记录') {
-      li.style.display = 'none';
-    }
-  });
-})();
-</script>
-
-<style id="wallet-hide-menu">
-.ant-menu-item:has(.ant-menu-title-content),
-li.ant-menu-item { }
-</style>
-<script>
-(function(){
-  function scrub(){
-    document.querySelectorAll('.ant-menu-item, [role="menuitem"]').forEach(function(el){
-      var t=(el.textContent||'').replace(/\s+/g,'');
-      if(/钱包开户设置|结算打款记录|账户设置|回款记录/.test(t)) el.remove();
-    });
-  }
-  scrub();
-  setTimeout(scrub, 200);
-  setTimeout(scrub, 1000);
-})();
-</script>
-
 <script id="wallet-shop-name-sync">
 (function () {
   var SHOP = "青羊区星氧百货店";
@@ -22195,6 +22165,22 @@ li.ant-menu-item { }
     var shop = data && data.home && data.home.shop;
     applyShop(shop || SHOP);
   });
+})();
+</script>
+
+
+<script id="wallet-sidebar-scrub">
+(function () {
+  var HIDE = /钱包开户设置|结算打款记录|账户设置|回款记录/;
+  function scrub() {
+    document.querySelectorAll(".ant-menu-item, [role=\"menuitem\"]").forEach(function (el) {
+      var t = (el.textContent || "").replace(/\s+/g, "");
+      if (HIDE.test(t)) el.remove();
+    });
+  }
+  scrub();
+  setTimeout(scrub, 200);
+  setTimeout(scrub, 800);
 })();
 </script>
 

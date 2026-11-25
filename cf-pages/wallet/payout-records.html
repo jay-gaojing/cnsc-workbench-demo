@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <base href="/">
-<title>结算打款记录 - Shopee 轻出海 (extracted)</title>
+<title>结算打款记录 - Shopee卖家中心</title>
 <!--
   打开方式：
   1) 有网直接打开：靠下面 <link> 加载 CDN 样式（推荐）
@@ -25106,6 +25106,37 @@ body.cb-dev-env.cb-show-breakpoints::before{
     var shop = data && data.home && data.home.shop;
     applyShop(shop || SHOP);
   });
+})();
+</script>
+
+
+<script id="wallet-sidebar-scrub">
+(function () {
+  var HIDE = /钱包开户设置|账户设置|回款记录|商品列表/;
+  function scrub() {
+    document.querySelectorAll(".ant-menu-item, [role=\"menuitem\"], .ant-menu-submenu").forEach(function (el) {
+      var t = (el.textContent || "").replace(/\s+/g, "");
+      // Keep 官方钱包 + 结算打款记录; drop noise items
+      if (HIDE.test(t) && t.indexOf("官方钱包") < 0 && t.indexOf("结算打款记录") < 0) {
+        el.remove();
+        return;
+      }
+      // Hide empty 商品管理 branch if only product list was removed
+      if (/^商品管理/.test(t) && t.indexOf("结算") < 0 && t.indexOf("钱包") < 0) {
+        el.remove();
+      }
+    });
+    // Mark 结算打款记录 as selected if present
+    document.querySelectorAll(".ant-menu-item").forEach(function (el) {
+      var t = (el.textContent || "").replace(/\s+/g, "");
+      if (t === "结算打款记录") {
+        el.classList.add("ant-menu-item-selected");
+      }
+    });
+  }
+  scrub();
+  setTimeout(scrub, 200);
+  setTimeout(scrub, 800);
 })();
 </script>
 

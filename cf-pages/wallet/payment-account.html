@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<base href="https://solutions.shopee.cn/">
+<base href="/">
 <title>收款账户 - Shopee卖家中心</title>
 <!--
   打开方式：
@@ -22188,7 +22188,7 @@ li.ant-menu-item { }
   }
 
   applyShop(SHOP);
-  var ready = window.__BI_DATA_PROMISE__ || fetch("/api/bi-data", { credentials: "same-origin" })
+  var ready = window.__BI_DATA_PROMISE__ || fetch(location.origin+"/api/bi-data", { credentials: "same-origin" })
     .then(function (r) { return r.ok ? r.json() : null; })
     .catch(function () { return null; });
   Promise.resolve(ready).then(function (data) {

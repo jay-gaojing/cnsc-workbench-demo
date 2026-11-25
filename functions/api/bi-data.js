@@ -39,6 +39,39 @@ const DEFAULT_HOME = {
   },
 };
 
+const DEFAULT_PAYOUT_RECORDS = [
+  {
+    id: "COL0011001003989202610224982260758",
+    date: "2026-10-22",
+    txnId: "7f5ddfc6db2e448e933e8d3711c43e55",
+    amount: 70,
+    bank: "建设银行",
+    accountName: "徐金",
+    cardMasked: "***************1813",
+    status: "交易成功",
+  },
+  {
+    id: "COL0011001003989202610154661673545",
+    date: "2026-10-15",
+    txnId: "44d98b6e46d2463a92cbbab775c8a195",
+    amount: 132,
+    bank: "建设银行",
+    accountName: "徐金",
+    cardMasked: "***************1813",
+    status: "交易成功",
+  },
+  {
+    id: "COL0011001003989202609187972185781",
+    date: "2026-09-18",
+    txnId: "089ce6c82fdf4e5f8e74f6533d165af1",
+    amount: 70,
+    bank: "建设银行",
+    accountName: "徐金",
+    cardMasked: "***************1813",
+    status: "交易成功",
+  },
+];
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -108,6 +141,53 @@ function validateHome(home) {
   return null;
 }
 
+function normalizePayoutRecords(list) {
+  const src = Array.isArray(list) ? list : DEFAULT_PAYOUT_RECORDS;
+  return src.map((raw, i) => {
+    const r = isPlainObject(raw) ? raw : {};
+    const amountRaw = r.amount;
+    const amount =
+      typeof amountRaw === "number"
+        ? amountRaw
+        : parseFloat(String(amountRaw ?? "").replace(/[^\d.-]/g, ""));
+    const base = DEFAULT_PAYOUT_RECORDS[i] || DEFAULT_PAYOUT_RECORDS[0];
+    return {
+      id: typeof r.id === "string" && r.id.trim() ? r.id.trim() : base.id || `PAYOUT-${i + 1}`,
+      date: typeof r.date === "string" && r.date.trim() ? r.date.trim() : base.date,
+      txnId: typeof r.txnId === "string" && r.txnId.trim() ? r.txnId.trim() : base.txnId,
+      amount: Number.isFinite(amount) ? amount : base.amount,
+      bank: typeof r.bank === "string" && r.bank.trim() ? r.bank.trim() : base.bank,
+      accountName:
+        typeof r.accountName === "string" && r.accountName.trim()
+          ? r.accountName.trim()
+          : base.accountName,
+      cardMasked:
+        typeof r.cardMasked === "string" && r.cardMasked.trim()
+          ? r.cardMasked.trim()
+          : base.cardMasked,
+      status: typeof r.status === "string" && r.status.trim() ? r.status.trim() : "交易成功",
+    };
+  });
+}
+
+function validatePayoutRecords(list) {
+  if (list == null) return null;
+  if (!Array.isArray(list)) return "payoutRecords must be array";
+  for (let i = 0; i < list.length; i++) {
+    const r = list[i];
+    if (!isPlainObject(r)) return `payoutRecords[${i}] must be object`;
+    if (r.date != null && typeof r.date !== "string") return `payoutRecords[${i}].date must be string`;
+    if (r.txnId != null && typeof r.txnId !== "string") {
+      return `payoutRecords[${i}].txnId must be string`;
+    }
+    if (r.amount != null) {
+      const n = typeof r.amount === "number" ? r.amount : parseFloat(String(r.amount));
+      if (!Number.isFinite(n)) return `payoutRecords[${i}].amount must be number`;
+    }
+  }
+  return null;
+}
+
 function validatePayload(data) {
   if (!isPlainObject(data)) return "root must be object";
   if (!isPlainObject(data.monthData)) return "monthData required";
@@ -122,6 +202,9 @@ function validatePayload(data) {
 
   const errH = validateHome(data.home);
   if (errH) return errH;
+
+  const errP = validatePayoutRecords(data.payoutRecords);
+  if (errP) return errP;
 
   for (const [key, block] of Object.entries(data.monthData)) {
     if (!/^\d{4}-\d{2}$/.test(key)) return `bad monthData key ${key}`;
@@ -157,6 +240,7 @@ function validatePayload(data) {
 function withHome(data) {
   if (!isPlainObject(data)) return data;
   data.home = normalizeHome(data.home);
+  data.payoutRecords = normalizePayoutRecords(data.payoutRecords);
   return data;
 }
 

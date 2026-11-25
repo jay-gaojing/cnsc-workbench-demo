@@ -86,6 +86,7 @@
     <div class="top-actions">
       <a class="link" href="/home.html" target="_blank">预览主页</a>
       <a class="link" href="/datacenter/home/?cnsc_shop_id=864505556" target="_blank">预览商业分析</a>
+      <a class="link" href="/wallet/payout-records.html" target="_blank">预览打款记录</a>
       <button class="btn" id="btnReset" type="button">恢复默认</button>
       <button class="btn btn-primary" id="btnSave" type="button">保存并同步</button>
     </div>
@@ -98,6 +99,7 @@
       <button class="tab" data-tab="month">按月汇总</button>
       <button class="tab" data-tab="series">按日序列</button>
       <button class="tab" data-tab="shops">店铺权重</button>
+      <button class="tab" data-tab="payout">打款记录</button>
     </div>
 
     <section class="panel active" id="panel-home">
@@ -147,6 +149,14 @@
       <div class="subhead" style="margin-top:18px">EXTRA_SHOPS（今日分页补充）</div>
       <div class="table-wrap" id="extraShopTable"></div>
     </section>
+
+    <section class="panel" id="panel-payout">
+      <p class="hint">备用页「结算打款记录」只展示这一栏。可改打款日期、交易 ID、到账金额；银行卡展示默认建设银行 / 徐金 / ****1813。保存后刷新预览页即生效。</p>
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn" type="button" id="btnAddPayout">新增一行</button>
+      </div>
+      <div class="table-wrap" id="payoutTable"></div>
+    </section>
   </main>
 
 <script>
@@ -170,6 +180,38 @@
     "待处理退货/退款",
     "已售完",
     "已禁卖/搜索排名降低"
+  ];
+  var DEFAULT_PAYOUT = [
+    {
+      id: "COL0011001003989202610224982260758",
+      date: "2026-10-22",
+      txnId: "7f5ddfc6db2e448e933e8d3711c43e55",
+      amount: 70,
+      bank: "建设银行",
+      accountName: "徐金",
+      cardMasked: "***************1813",
+      status: "交易成功"
+    },
+    {
+      id: "COL0011001003989202610154661673545",
+      date: "2026-10-15",
+      txnId: "44d98b6e46d2463a92cbbab775c8a195",
+      amount: 132,
+      bank: "建设银行",
+      accountName: "徐金",
+      cardMasked: "***************1813",
+      status: "交易成功"
+    },
+    {
+      id: "COL0011001003989202609187972185781",
+      date: "2026-09-18",
+      txnId: "089ce6c82fdf4e5f8e74f6533d165af1",
+      amount: 70,
+      bank: "建设银行",
+      accountName: "徐金",
+      cardMasked: "***************1813",
+      status: "交易成功"
+    }
   ];
   var DEFAULT_HOME = {
     shop: "青羊区星氧百货店",
@@ -579,6 +621,76 @@
     }
   }
 
+  function ensurePayout() {
+    if (!Array.isArray(data.payoutRecords) || !data.payoutRecords.length) {
+      data.payoutRecords = JSON.parse(JSON.stringify(DEFAULT_PAYOUT));
+    }
+    data.payoutRecords.forEach(function (r, i) {
+      if (!r || typeof r !== "object") {
+        data.payoutRecords[i] = JSON.parse(JSON.stringify(DEFAULT_PAYOUT[0]));
+        return;
+      }
+      if (typeof r.date !== "string") r.date = "";
+      if (typeof r.txnId !== "string") r.txnId = "";
+      var amt = typeof r.amount === "number" ? r.amount : parseFloat(String(r.amount || ""));
+      r.amount = Number.isFinite(amt) ? amt : 0;
+      if (!r.bank) r.bank = "建设银行";
+      if (!r.accountName) r.accountName = "徐金";
+      if (!r.cardMasked) r.cardMasked = "***************1813";
+      if (!r.status) r.status = "交易成功";
+      if (!r.id) r.id = "PAYOUT-" + (i + 1) + "-" + Date.now();
+    });
+  }
+
+  function renderPayoutPanel() {
+    ensurePayout();
+    var wrap = document.getElementById("payoutTable");
+    wrap.innerHTML = "";
+    var table = document.createElement("table");
+    table.innerHTML =
+      "<thead><tr>" +
+      "<th style='min-width:44px'>#</th>" +
+      "<th style='min-width:130px'>打款日期</th>" +
+      "<th style='min-width:280px'>交易ID</th>" +
+      "<th style='min-width:110px'>到账金额</th>" +
+      "<th style='min-width:64px'>操作</th>" +
+      "</tr></thead>";
+    var tbody = document.createElement("tbody");
+    data.payoutRecords.forEach(function (rec, idx) {
+      var tr = document.createElement("tr");
+      var tdI = document.createElement("td");
+      tdI.textContent = String(idx + 1);
+      var tdD = document.createElement("td");
+      tdD.appendChild(textInput(rec.date, function (v) { rec.date = v; }));
+      var tdT = document.createElement("td");
+      var txnInp = textInput(rec.txnId, function (v) { rec.txnId = v; });
+      txnInp.style.minWidth = "260px";
+      tdT.appendChild(txnInp);
+      var tdA = document.createElement("td");
+      tdA.appendChild(numInput(rec.amount, function (v) {
+        rec.amount = Math.round(v * 100) / 100;
+      }));
+      var tdOp = document.createElement("td");
+      var del = document.createElement("button");
+      del.className = "btn";
+      del.type = "button";
+      del.textContent = "删";
+      del.addEventListener("click", function () {
+        data.payoutRecords.splice(idx, 1);
+        renderPayoutPanel();
+      });
+      tdOp.appendChild(del);
+      tr.appendChild(tdI);
+      tr.appendChild(tdD);
+      tr.appendChild(tdT);
+      tr.appendChild(tdA);
+      tr.appendChild(tdOp);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+  }
+
   function nudgeHomeDemoData() {
     ensureHome();
     if (!data.today) return;
@@ -688,6 +800,7 @@
     renderSeriesTable();
     renderShopTable("shopBaseTable", data.shopBase);
     renderShopTable("extraShopTable", data.extraShops);
+    renderPayoutPanel();
   }
 
   async function loadData() {
@@ -698,6 +811,7 @@
     if (!data.extraShops) data.extraShops = [];
     if (!data.shopBase) data.shopBase = [];
     ensureHome();
+    ensurePayout();
     renderAll();
     setStatus("已加载" + (data.updatedAt ? "（更新于 " + data.updatedAt + "）" : "（默认数据）"), "ok");
   }
@@ -758,6 +872,23 @@
       el.classList.toggle("active", el.id === "panel-" + tab);
     });
     if (tab === "home") renderHomePanel();
+    if (tab === "payout") renderPayoutPanel();
+  });
+
+  document.getElementById("btnAddPayout").addEventListener("click", function () {
+    ensurePayout();
+    data.payoutRecords.push({
+      id: "PAYOUT-" + Date.now(),
+      date: new Date().toISOString().slice(0, 10),
+      txnId: "",
+      amount: 0,
+      bank: "建设银行",
+      accountName: "徐金",
+      cardMasked: "***************1813",
+      status: "交易成功"
+    });
+    renderPayoutPanel();
+    setStatus("已新增打款行（记得点保存）", "ok");
   });
 
   document.getElementById("seriesMonth").addEventListener("change", renderSeriesTable);

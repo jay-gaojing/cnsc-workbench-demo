@@ -22184,5 +22184,38 @@ body.cb-dev-env.cb-show-breakpoints::before{
 })();
 </script>
 
+<script id="wallet-embed-mode">
+(function () {
+  var q = location.search || "";
+  var embed = /(?:\?|&)embed=1(?:&|$)/.test(q) || /[?&]embed=1/.test(q);
+  if (!embed) return;
+  document.documentElement.classList.add("cnsc-embed");
+  var style = document.createElement("style");
+  style.textContent = [
+    "html.cnsc-embed, html.cnsc-embed body { margin:0; background:#f5f5f5; }",
+    "html.cnsc-embed header.ant-layout-header,",
+    "html.cnsc-embed aside.ant-layout-sider,",
+    "html.cnsc-embed .ant-layout-sider,",
+    "html.cnsc-embed .mb-4.bg-primary { display:none !important; }",
+    "html.cnsc-embed main.ant-layout-content { margin:0 !important; padding:0 !important; max-width:none !important; min-width:0 !important; }",
+    "html.cnsc-embed .ant-layout.ant-layout-has-sider { padding-top:0 !important; }",
+    "html.cnsc-embed .pt-header { padding-top:0 !important; }",
+    "html.cnsc-embed .ml-sidebar { margin-left:0 !important; }"
+  ].join("\\n");
+  document.head.appendChild(style);
+  function scrubChrome() {
+    document.querySelectorAll("header.ant-layout-header, aside.ant-layout-sider").forEach(function (el) {
+      el.style.display = "none";
+    });
+    document.querySelectorAll("main.ant-layout-content").forEach(function (el) {
+      el.style.marginLeft = "0";
+      el.style.margin = "0";
+      el.style.maxWidth = "none";
+    });
+  }
+  scrubChrome();
+  setTimeout(scrubChrome, 200);
+})();
+</script>
 </body>
 </html>

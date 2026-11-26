@@ -37438,20 +37438,98 @@ body.cb-dev-env.cb-show-breakpoints::before{
 
 <script id="finance-payment-account-nav">
 (function () {
-  var TARGET = "wallet/payment-account.html";
+  var PAYMENT_HTML = "<div id=\"cnsc-embed-payment\" style=\"width:100%;min-height:650px;background:#f5f5f5;padding:24px 28px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;color:#1a1a1a\">\n  <div style=\"display:flex;align-items:center;gap:10px;margin-bottom:20px\">\n    <span style=\"width:28px;height:28px;border-radius:50%;background:#30B566;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700\">✓</span>\n    <div style=\"font-size:16px;font-weight:600;line-height:1.4\">您的信息已全部审核通过，收款服务开启中</div>\n  </div>\n  <div style=\"display:flex;gap:16px;flex-wrap:wrap;align-items:stretch\">\n    <div style=\"flex:1 1 340px;background:#fff;border-radius:8px;padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,.06);min-width:300px\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px;flex-wrap:wrap\">\n        <div style=\"display:flex;align-items:center;gap:8px\">\n          <span style=\"font-size:15px;font-weight:600\">企业实名信息</span>\n          <span style=\"display:inline-flex;align-items:center;gap:4px;color:#30B566;font-size:13px\"><span>✓</span>审核通过</span>\n        </div>\n        <div style=\"display:flex;gap:8px\">\n          <button type=\"button\" style=\"height:28px;padding:0 12px;border:1px solid #e5e5e5;border-radius:4px;background:#fff;cursor:default;font-size:12px\">变更主体</button>\n          <button type=\"button\" style=\"height:28px;padding:0 12px;border:1px solid #e5e5e5;border-radius:4px;background:#fff;cursor:default;font-size:12px\">编辑</button>\n        </div>\n      </div>\n      <div style=\"display:grid;grid-template-columns:110px 1fr;row-gap:14px;column-gap:12px;font-size:13px;line-height:1.5\">\n        <div style=\"color:#999\">公司名称</div><div>青羊区星氧百货店</div>\n        <div style=\"color:#999\">统一信用代码</div><div>92510105MAEAYD4K1T</div>\n        <div style=\"color:#999\">公司营业期限</div><div>2025-01-15 至 9999-12-31</div>\n        <div style=\"color:#999\">法人姓名</div><div>*金</div>\n      </div>\n    </div>\n    <div style=\"flex:1 1 340px;background:#fff;border-radius:8px;padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,.06);min-width:300px\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px;flex-wrap:wrap\">\n        <div style=\"display:flex;align-items:center;gap:8px\">\n          <span style=\"font-size:15px;font-weight:600\">银行卡信息</span>\n          <span style=\"display:inline-flex;align-items:center;gap:4px;color:#30B566;font-size:13px\"><span>✓</span>审核通过</span>\n        </div>\n        <div style=\"display:flex;gap:8px\">\n          <button type=\"button\" style=\"height:28px;padding:0 12px;border:1px solid #e5e5e5;border-radius:4px;background:#fff;cursor:default;font-size:12px\">删除</button>\n          <button type=\"button\" style=\"height:28px;padding:0 12px;border:1px solid #e5e5e5;border-radius:4px;background:#fff;cursor:default;font-size:12px\">编辑</button>\n        </div>\n      </div>\n      <div style=\"display:grid;grid-template-columns:72px 1fr;row-gap:14px;column-gap:12px;font-size:13px;line-height:1.5\">\n        <div style=\"color:#999\">账户名</div><div>*金</div>\n        <div style=\"color:#999\">账号</div>\n        <div style=\"display:flex;align-items:center;gap:10px;flex-wrap:wrap\">\n          <span>************1813</span>\n          <img alt=\"建设银行\" src=\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22'><rect width='22' height='22' rx='4' fill='%230055B8'/><text x='11' y='15' text-anchor='middle' fill='white' font-size='10' font-family='sans-serif'>建</text></svg>\" width=\"20\" height=\"20\" style=\"border-radius:3px\"/>\n          <span>建设银行</span>\n        </div>\n        <div style=\"color:#999\">类型</div><div>对私账户 - 法定代表人银行账户</div>\n      </div>\n    </div>\n  </div>\n</div>";
+  var PAYOUT_SRC = "wallet/payout-records.html?embed=1";
+
+  function textOf(el) {
+    return ((el && el.textContent) || "").replace(/\s+/g, "");
+  }
   function isPayAccount(el) {
     if (!el) return false;
-    var t = (el.textContent || "").replace(/\s+/g, "");
-    return t.indexOf("收款账户") >= 0;
+    if (el.getAttribute && el.getAttribute("test-id") === "bank account") return true;
+    return textOf(el).indexOf("收款账户") >= 0;
   }
-  document.addEventListener("click", function (e) {
-    var a = e.target && e.target.closest && e.target.closest("a, .sidebar-submenu-item");
-    if (!a) return;
-    if (!isPayAccount(a) && !(a.getAttribute && a.getAttribute("test-id") === "bank account")) return;
-    e.preventDefault();
-    e.stopPropagation();
-    location.href = TARGET;
-  }, true);
+  function isPayout(el) {
+    if (!el) return false;
+    var t = textOf(el);
+    return t.indexOf("结算打款记录") >= 0 || t.indexOf("打款记录") >= 0;
+  }
+  function contentHost() {
+    return (
+      document.querySelector(".page-content-wrapper") ||
+      document.querySelector(".responsive-content-wrapper") ||
+      document.querySelector(".page-container")
+    );
+  }
+  function markSelected(el) {
+    document.querySelectorAll(".sidebar-submenu-item.is-active, .sidebar-submenu-item.active").forEach(function (n) {
+      n.classList.remove("is-active");
+      n.classList.remove("active");
+    });
+    var item = el && el.closest && el.closest(".sidebar-submenu-item");
+    if (item) {
+      item.classList.add("is-active");
+      item.classList.add("active");
+    }
+  }
+  function showPayment() {
+    var host = contentHost();
+    if (!host) return false;
+    host.innerHTML = PAYMENT_HTML;
+    try {
+      history.replaceState(null, "", "#/portal/finance/balance-account");
+    } catch (_) {}
+    document.title = "收款账户 - Shopee卖家中心";
+    return true;
+  }
+  function showPayout() {
+    var host = contentHost();
+    if (!host) return false;
+    host.innerHTML =
+      '<iframe id="cnsc-embed-payout" src="' + PAYOUT_SRC + '" style="width:100%;min-height:780px;height:calc(100vh - 80px);border:0;background:#fff;display:block"></iframe>';
+    try {
+      history.replaceState(null, "", "#/portal/finance/payout-records");
+    } catch (_) {}
+    document.title = "结算打款记录 - Shopee卖家中心";
+    return true;
+  }
+
+  document.addEventListener(
+    "click",
+    function (e) {
+      var a = e.target && e.target.closest && e.target.closest("a, .sidebar-submenu-item, [test-id]");
+      if (!a) return;
+      if (isPayAccount(a)) {
+        e.preventDefault();
+        e.stopPropagation();
+        markSelected(a);
+        showPayment();
+        return;
+      }
+      if (isPayout(a)) {
+        e.preventDefault();
+        e.stopPropagation();
+        markSelected(a);
+        showPayout();
+      }
+    },
+    true
+  );
+
+  // Deep-link: if hash asks for payment account, show it after load
+  function bootHash() {
+    var h = (location.hash || "").toLowerCase();
+    if (h.indexOf("balance-account") >= 0 || h.indexOf("payment-account") >= 0 || h.indexOf("收款") >= 0) {
+      showPayment();
+    } else if (h.indexOf("payout") >= 0 || h.indexOf("打款") >= 0) {
+      showPayout();
+    }
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootHash);
+  } else {
+    setTimeout(bootHash, 0);
+  }
 })();
 </script>
 </body>

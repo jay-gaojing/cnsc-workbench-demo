@@ -37532,5 +37532,69 @@ body.cb-dev-env.cb-show-breakpoints::before{
   }
 })();
 </script>
+
+<script id="finance-payment-account-nav-harden">
+(function () {
+  function rewriteLinks() {
+    document.querySelectorAll('a, .sidebar-submenu-item, [test-id="bank account"]').forEach(function (el) {
+      var t = ((el.textContent || "") + "").replace(/\s+/g, "");
+      var isPay =
+        (el.getAttribute && el.getAttribute("test-id") === "bank account") ||
+        t.indexOf("收款账户") >= 0;
+      var isPayout = t.indexOf("结算打款记录") >= 0;
+      if (!isPay && !isPayout) return;
+      var a = el.tagName === "A" ? el : el.querySelector && el.querySelector("a");
+      if (a && a.setAttribute) {
+        a.setAttribute(
+          "href",
+          isPay ? "#/portal/finance/balance-account" : "#/portal/finance/payout-records"
+        );
+        a.removeAttribute("target");
+      }
+    });
+  }
+  rewriteLinks();
+  setTimeout(rewriteLinks, 300);
+  setTimeout(rewriteLinks, 1200);
+  // Re-run when sidebar expands
+  document.addEventListener("click", function () {
+    setTimeout(rewriteLinks, 50);
+  }, true);
+})();
+</script>
+
+
+<script id="finance-block-wallet-jump">
+(function () {
+  // If anything still tries to jump to wallet/payment-account, bounce back to in-page.
+  var _assign = location.assign.bind(location);
+  var _replace = location.replace.bind(location);
+  function toInpage(url) {
+    var s = String(url || "");
+    if (/wallet\/payment-account/i.test(s)) {
+      location.hash = "#/portal/finance/balance-account";
+      if (typeof window.__CNSC_SHOW_PAYMENT__ === "function") window.__CNSC_SHOW_PAYMENT__();
+      return true;
+    }
+    if (/wallet\/payout-records/i.test(s) && !/[?&]embed=1/.test(s)) {
+      location.hash = "#/portal/finance/payout-records";
+      if (typeof window.__CNSC_SHOW_PAYOUT__ === "function") window.__CNSC_SHOW_PAYOUT__();
+      return true;
+    }
+    return false;
+  }
+  try {
+    location.assign = function (url) {
+      if (toInpage(url)) return;
+      return _assign(url);
+    };
+    location.replace = function (url) {
+      if (toInpage(url)) return;
+      return _replace(url);
+    };
+  } catch (e) {}
+})();
+</script>
+
 </body>
 </html>

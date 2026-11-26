@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script id="wallet-force-home-shell">
+(function () {
+  try {
+    var q = location.search || "";
+    if (/(?:\?|&)embed=1(?:&|$)/.test(q)) return;
+    // Always show payment inside original seller center shell.
+    var dest = "/home.html#/portal/finance/balance-account";
+    location.replace(dest);
+  } catch (e) {}
+})();
+</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <base href="/">

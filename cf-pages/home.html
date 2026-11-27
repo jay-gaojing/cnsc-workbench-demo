@@ -37439,7 +37439,6 @@ body.cb-dev-env.cb-show-breakpoints::before{
 <script id="finance-payment-account-nav">
 (function () {
   var PAYMENT_HTML = "<div id=\"cnsc-embed-payment\" style=\"width:100%;min-height:650px;background:#f5f5f5;padding:24px 28px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;color:#1a1a1a\">\n  <div style=\"display:flex;align-items:center;gap:10px;margin-bottom:20px\">\n    <span style=\"width:28px;height:28px;border-radius:50%;background:#30B566;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700\">✓</span>\n    <div style=\"font-size:16px;font-weight:600;line-height:1.4\">您的信息已全部审核通过，收款服务开启中</div>\n  </div>\n  <div style=\"display:flex;gap:16px;flex-wrap:wrap;align-items:stretch\">\n    <div style=\"flex:1 1 340px;background:#fff;border-radius:8px;padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,.06);min-width:300px\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px;flex-wrap:wrap\">\n        <div style=\"display:flex;align-items:center;gap:8px\">\n          <span style=\"font-size:15px;font-weight:600\">企业实名信息</span>\n          <span style=\"display:inline-flex;align-items:center;gap:4px;color:#30B566;font-size:13px\"><span>✓</span>审核通过</span>\n        </div>\n        <div style=\"display:flex;gap:8px\">\n          <button type=\"button\" style=\"height:28px;padding:0 12px;border:1px solid #e5e5e5;border-radius:4px;background:#fff;cursor:default;font-size:12px\">变更主体</button>\n          <button type=\"button\" style=\"height:28px;padding:0 12px;border:1px solid #e5e5e5;border-radius:4px;background:#fff;cursor:default;font-size:12px\">编辑</button>\n        </div>\n      </div>\n      <div style=\"display:grid;grid-template-columns:110px 1fr;row-gap:14px;column-gap:12px;font-size:13px;line-height:1.5\">\n        <div style=\"color:#999\">公司名称</div><div>青羊区星氧百货店</div>\n        <div style=\"color:#999\">统一信用代码</div><div>92510105MAEAYD4K1T</div>\n        <div style=\"color:#999\">公司营业期限</div><div>2025-01-15 至 9999-12-31</div>\n        <div style=\"color:#999\">法人姓名</div><div>*金</div>\n      </div>\n    </div>\n    <div style=\"flex:1 1 340px;background:#fff;border-radius:8px;padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,.06);min-width:300px\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px;flex-wrap:wrap\">\n        <div style=\"display:flex;align-items:center;gap:8px\">\n          <span style=\"font-size:15px;font-weight:600\">银行卡信息</span>\n          <span style=\"display:inline-flex;align-items:center;gap:4px;color:#30B566;font-size:13px\"><span>✓</span>审核通过</span>\n        </div>\n        <div style=\"display:flex;gap:8px\">\n          <button type=\"button\" style=\"height:28px;padding:0 12px;border:1px solid #e5e5e5;border-radius:4px;background:#fff;cursor:default;font-size:12px\">删除</button>\n          <button type=\"button\" style=\"height:28px;padding:0 12px;border:1px solid #e5e5e5;border-radius:4px;background:#fff;cursor:default;font-size:12px\">编辑</button>\n        </div>\n      </div>\n      <div style=\"display:grid;grid-template-columns:72px 1fr;row-gap:14px;column-gap:12px;font-size:13px;line-height:1.5\">\n        <div style=\"color:#999\">账户名</div><div>*金</div>\n        <div style=\"color:#999\">账号</div>\n        <div style=\"display:flex;align-items:center;gap:10px;flex-wrap:wrap\">\n          <span>************1813</span>\n          <img alt=\"建设银行\" src=\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22'><rect width='22' height='22' rx='4' fill='%230055B8'/><text x='11' y='15' text-anchor='middle' fill='white' font-size='10' font-family='sans-serif'>建</text></svg>\" width=\"20\" height=\"20\" style=\"border-radius:3px\"/>\n          <span>建设银行</span>\n        </div>\n        <div style=\"color:#999\">类型</div><div>对私账户 - 法定代表人银行账户</div>\n      </div>\n    </div>\n  </div>\n</div>";
-  var PAYOUT_SRC = "wallet/payout-records.embed.html?embed=1";
 
   function textOf(el) {
     return ((el && el.textContent) || "").replace(/\s+/g, "");
@@ -37482,16 +37481,109 @@ body.cb-dev-env.cb-show-breakpoints::before{
     document.title = "收款账户 - Shopee卖家中心";
     return true;
   }
-  function showPayout() {
+function showPayout() {
     var host = contentHost();
     if (!host) return false;
     host.innerHTML =
-      '<iframe id="cnsc-embed-payout" src="' + PAYOUT_SRC + '" style="width:100%;min-height:780px;height:calc(100vh - 80px);border:0;background:#fff;display:block"></iframe>';
+      '<div id="cnsc-embed-payout" style="width:100%;box-sizing:border-box;padding:12px 12px 24px;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',\'PingFang SC\',\'Microsoft YaHei\',sans-serif;color:#1a1a1a">' +
+        '<div style="background:#fff;border-radius:8px;padding:16px 14px 8px;margin-bottom:12px">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+            '<img alt="" src="https://deo.shopeemobile.com/shopee/shopee-seller-live-sg/rootpage/pc/favicon.ico" width="20" height="20" style="border-radius:4px" onerror="this.style.display=\'none\'">' +
+            '<div style="font-size:18px;font-weight:600">结算打款记录</div>' +
+          '</div>' +
+          '<div style="font-size:12px;color:#999;line-height:1.5">您可在此页面查询已结算订单记录及打款交易记录</div>' +
+          '<div style="margin-top:12px;border-bottom:2px solid #EE4D2D;display:inline-block;padding-bottom:6px;font-size:14px;font-weight:600;color:#EE4D2D">打款记录</div>' +
+          '<div style="margin-top:10px;font-size:12px;color:#999;line-height:1.5">数据更新有10秒级延迟，支持近两年的交易查询，查询开始和结束时间跨度不超过一年（365天）</div>' +
+        '</div>' +
+        '<div id="cnsc-payout-list" style="display:flex;flex-direction:column;gap:10px">' +
+          '<div style="background:#fff;border-radius:8px;padding:24px;text-align:center;color:#999">加载中…</div>' +
+        '</div>' +
+      '</div>';
     try {
       history.replaceState(null, "", "#/portal/finance/payout-records");
     } catch (_) {}
     document.title = "结算打款记录 - Shopee卖家中心";
+    loadPayoutRecords();
     return true;
+  }
+
+  function escHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function fmtAmt(n) {
+    var num = typeof n === "number" ? n : parseFloat(String(n).replace(/[^\d.-]/g, ""));
+    if (!Number.isFinite(num)) num = 0;
+    var s = (Math.round(num * 100) / 100).toFixed(2);
+    if (s.slice(-3) === ".00") s = s.slice(0, -3);
+    else if (s.slice(-1) === "0") s = s.slice(0, -1);
+    return "¥" + s;
+  }
+
+  function payoutCard(rec) {
+    var bank = escHtml(rec.bank || "建设银行");
+    var name = escHtml(rec.accountName || "徐金");
+    var card = escHtml(rec.cardMasked || "***************1813");
+    return (
+      '<div style="background:#fff;border-radius:8px;padding:14px 14px 12px;box-shadow:0 1px 3px rgba(0,0,0,.04)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px">' +
+          '<div style="font-size:15px;font-weight:600">' + escHtml(rec.date || "") + "</div>" +
+          '<span style="flex-shrink:0;color:#30B566;background:rgba(48,181,102,.12);border-radius:999px;padding:2px 8px;font-size:12px">交易成功</span>' +
+        "</div>" +
+        '<div style="font-size:12px;color:#999;margin-bottom:4px">交易ID</div>' +
+        '<div style="font-size:12px;line-height:1.4;word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin-bottom:10px">' +
+          escHtml(rec.txnId || "") +
+        "</div>" +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">' +
+          '<div style="min-width:0">' +
+            '<div style="font-size:12px;color:#999;margin-bottom:4px">到账银行卡</div>' +
+            '<div style="font-size:13px;line-height:1.45">' +
+              '<div>' + bank + "</div>" +
+              '<div style="color:#999;font-size:12px">' + name + "</div>" +
+              '<div style="color:#999;font-size:12px;word-break:break-all">' + card + "</div>" +
+            "</div>" +
+          "</div>" +
+          '<div style="text-align:right">' +
+            '<div style="font-size:12px;color:#999;margin-bottom:4px">到账金额</div>' +
+            '<div style="font-size:18px;font-weight:600;color:#EE4D2D">' + fmtAmt(rec.amount) + "</div>" +
+          "</div>" +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+  function renderPayoutList(list) {
+    var box = document.getElementById("cnsc-payout-list");
+    if (!box) return;
+    if (!Array.isArray(list) || !list.length) {
+      box.innerHTML =
+        '<div style="background:#fff;border-radius:8px;padding:28px;text-align:center;color:#999">暂无打款记录</div>';
+      return;
+    }
+    box.innerHTML =
+      list.map(payoutCard).join("") +
+      '<div style="text-align:right;color:#999;font-size:12px;padding:4px 2px">' +
+      list.length +
+      " in total</div>";
+  }
+
+  function loadPayoutRecords() {
+    var ready =
+      window.__BI_DATA_PROMISE__ ||
+      fetch(location.origin + "/api/bi-data", { credentials: "same-origin" })
+        .then(function (r) {
+          return r.ok ? r.json() : null;
+        })
+        .catch(function () {
+          return null;
+        });
+    Promise.resolve(ready).then(function (data) {
+      renderPayoutList((data && data.payoutRecords) || []);
+    });
   }
 
   document.addEventListener(

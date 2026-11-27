@@ -152,9 +152,10 @@
     </section>
 
     <section class="panel" id="panel-payout">
-      <p class="hint">备用页「结算打款记录」只展示这一栏。可改打款日期、交易 ID、到账金额；银行卡展示默认建设银行 / 徐金 / ****1813。保存后刷新预览页即生效。</p>
+      <p class="hint">打款日期用 YYYY-MM-DD；交易 ID 与原页一致为 32 位小写十六进制（如 7f5ddfc6db2e448e933e8d3711c43e55），可点「随机」生成；到账金额为数字。银行卡默认建设银行 / 徐金 / ****1813。保存后刷新预览页生效。</p>
       <div class="row" style="margin-bottom:12px">
         <button class="btn" type="button" id="btnAddPayout">新增一行</button>
+        <button class="btn" type="button" id="btnRandAllTxn">全部随机交易ID</button>
       </div>
       <div class="table-wrap" id="payoutTable"></div>
     </section>
@@ -622,6 +623,23 @@
     }
   }
 
+  function randomTxnId() {
+    // Original page format: 32 lowercase hex chars (uuid-like without dashes)
+    var out = "";
+    if (window.crypto && crypto.getRandomValues) {
+      var buf = new Uint8Array(16);
+      crypto.getRandomValues(buf);
+      for (var i = 0; i < buf.length; i++) {
+        out += ("0" + buf[i].toString(16)).slice(-2);
+      }
+      return out;
+    }
+    for (var j = 0; j < 32; j++) {
+      out += "0123456789abcdef".charAt(Math.floor(Math.random() * 16));
+    }
+    return out;
+  }
+
   function ensurePayout() {
     if (!Array.isArray(data.payoutRecords) || !data.payoutRecords.length) {
       data.payoutRecords = JSON.parse(JSON.stringify(DEFAULT_PAYOUT));
@@ -652,9 +670,9 @@
       "<thead><tr>" +
       "<th style='min-width:44px'>#</th>" +
       "<th style='min-width:130px'>打款日期</th>" +
-      "<th style='min-width:280px'>交易ID</th>" +
+      "<th style='min-width:340px'>交易ID（32位十六进制）</th>" +
       "<th style='min-width:110px'>到账金额</th>" +
-      "<th style='min-width:64px'>操作</th>" +
+      "<th style='min-width:120px'>操作</th>" +
       "</tr></thead>";
     var tbody = document.createElement("tbody");
     data.payoutRecords.forEach(function (rec, idx) {
@@ -662,11 +680,30 @@
       var tdI = document.createElement("td");
       tdI.textContent = String(idx + 1);
       var tdD = document.createElement("td");
-      tdD.appendChild(textInput(rec.date, function (v) { rec.date = v; }));
+      var dateInp = textInput(rec.date, function (v) { rec.date = v; });
+      dateInp.placeholder = "YYYY-MM-DD";
+      tdD.appendChild(dateInp);
       var tdT = document.createElement("td");
-      var txnInp = textInput(rec.txnId, function (v) { rec.txnId = v; });
+      tdT.style.whiteSpace = "nowrap";
+      var txnInp = textInput(rec.txnId, function (v) {
+        rec.txnId = String(v || "").trim().toLowerCase();
+      });
       txnInp.style.minWidth = "260px";
+      txnInp.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+      txnInp.placeholder = "32位小写十六进制";
+      var randBtn = document.createElement("button");
+      randBtn.className = "btn";
+      randBtn.type = "button";
+      randBtn.textContent = "随机";
+      randBtn.style.marginLeft = "6px";
+      randBtn.title = "按原页格式生成 32 位交易ID";
+      randBtn.addEventListener("click", function () {
+        rec.txnId = randomTxnId();
+        txnInp.value = rec.txnId;
+        setStatus("已随机生成交易ID（记得点保存）", "ok");
+      });
       tdT.appendChild(txnInp);
+      tdT.appendChild(randBtn);
       var tdA = document.createElement("td");
       tdA.appendChild(numInput(rec.amount, function (v) {
         rec.amount = Math.round(v * 100) / 100;
@@ -881,7 +918,7 @@
     data.payoutRecords.push({
       id: "PAYOUT-" + Date.now(),
       date: new Date().toISOString().slice(0, 10),
-      txnId: "",
+      txnId: randomTxnId(),
       amount: 0,
       bank: "建设银行",
       accountName: "徐金",
@@ -889,7 +926,16 @@
       status: "交易成功"
     });
     renderPayoutPanel();
-    setStatus("已新增打款行（记得点保存）", "ok");
+    setStatus("已新增打款行（交易ID已随机，记得点保存）", "ok");
+  });
+
+  document.getElementById("btnRandAllTxn").addEventListener("click", function () {
+    ensurePayout();
+    data.payoutRecords.forEach(function (r) {
+      r.txnId = randomTxnId();
+    });
+    renderPayoutPanel();
+    setStatus("已为全部行随机生成交易ID（记得点保存）", "ok");
   });
 
   document.getElementById("seriesMonth").addEventListener("change", renderSeriesTable);

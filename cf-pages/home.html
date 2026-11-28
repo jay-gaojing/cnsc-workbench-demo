@@ -37460,16 +37460,54 @@ body.cb-dev-env.cb-show-breakpoints::before{
       document.querySelector(".page-container")
     );
   }
-  function markSelected(el) {
+  function markFinanceActive(kind) {
+    // Clear other submenu actives (e.g. 营销中心)
+    document.querySelectorAll("a.sidebar-submenu-item-link.router-link-active").forEach(function (n) {
+      n.classList.remove("router-link-active");
+    });
     document.querySelectorAll(".sidebar-submenu-item.is-active, .sidebar-submenu-item.active").forEach(function (n) {
       n.classList.remove("is-active");
       n.classList.remove("active");
     });
-    var item = el && el.closest && el.closest(".sidebar-submenu-item");
-    if (item) {
-      item.classList.add("is-active");
-      item.classList.add("active");
+    var sel =
+      kind === "payout"
+        ? 'a.sidebar-submenu-item-link'
+        : 'a.sidebar-submenu-item-link[test-id="bank account"]';
+    var links = Array.prototype.slice.call(document.querySelectorAll(sel));
+    var target = null;
+    if (kind === "payout") {
+      target = links.filter(function (a) {
+        var t = ((a.textContent || "") + "").replace(/\s+/g, "");
+        return t.indexOf("结算打款记录") >= 0 || t.indexOf("打款记录") >= 0;
+      })[0];
+    } else {
+      target = links[0] || document.querySelector('a[test-id="bank account"]');
     }
+    if (!target) {
+      // fallback by text
+      document.querySelectorAll("a.sidebar-submenu-item-link").forEach(function (a) {
+        var t = ((a.textContent || "") + "").replace(/\s+/g, "");
+        if (!target && t.indexOf(kind === "payout" ? "打款" : "收款账户") >= 0) target = a;
+      });
+    }
+    if (target) {
+      target.classList.add("router-link-active");
+      var item = target.closest(".sidebar-submenu-item");
+      if (item) {
+        item.classList.add("is-active");
+        item.classList.add("active");
+      }
+      // Expand 财务 group
+      var box = target.closest(".sidebar-menu-box") || document.querySelector(".ps_menu_finance");
+      if (box) box.classList.remove("sidebar-menu-collapse");
+      var menuItem = box && box.querySelector(".sidebar-menu-item");
+      if (menuItem) menuItem.classList.remove("sidebar-menu-collapse");
+    }
+  }
+  function markSelected(el) {
+    var t = ((el && el.textContent) || "").replace(/\s+/g, "");
+    if (t.indexOf("打款") >= 0) markFinanceActive("payout");
+    else markFinanceActive("payment");
   }
   function showPayment() {
     var host = contentHost();
@@ -37479,6 +37517,7 @@ body.cb-dev-env.cb-show-breakpoints::before{
       history.replaceState(null, "", "#/portal/finance/balance-account");
     } catch (_) {}
     document.title = "收款账户 - Shopee卖家中心";
+    markFinanceActive("payment");
     return true;
   }
 function showPayout() {
@@ -37504,6 +37543,7 @@ function showPayout() {
       history.replaceState(null, "", "#/portal/finance/payout-records");
     } catch (_) {}
     document.title = "结算打款记录 - Shopee卖家中心";
+    markFinanceActive("payout");
     loadPayoutRecords();
     return true;
   }

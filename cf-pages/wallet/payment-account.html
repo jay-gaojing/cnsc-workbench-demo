@@ -8,7 +8,16 @@
 <script id="wallet-force-home-shell">
 (function () {
   // Never show the old SEP wallet shell. Always open inside original seller center.
-  var dest = "/home.html#/portal/finance/balance-account";
+  var dest;
+  try {
+    if (location.protocol === "file:") {
+      dest = "../home.html#/portal/finance/balance-account";
+    } else {
+      dest = "/home.html#/portal/finance/balance-account";
+    }
+  } catch (e) {
+    dest = "/home.html#/portal/finance/balance-account";
+  }
   try { location.replace(dest); } catch (e) { location.href = dest; }
 })();
 </script>
